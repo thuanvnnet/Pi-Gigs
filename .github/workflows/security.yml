@@ -1,0 +1,30 @@
+name: Security Gate
+
+# Trigger: Chạy mỗi khi push code hoặc tạo Pull Request
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  secret-scan:
+    name: Custom Security Scanner
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Lấy code từ repo về máy chủ ảo (Runner)
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Cài đặt Python trên Runner
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12' 
+          # Lưu ý: Trên CI nên dùng bản Stable (3.12) thay vì 3.14
+
+      # 3. Chạy script bảo vệ mà bạn đã viết
+      - name: Run Security Script
+        run: |
+          python security_scan.py $(find . -type f -name "*")
