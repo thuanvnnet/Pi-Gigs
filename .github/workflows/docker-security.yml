@@ -1,0 +1,42 @@
+name: Docker Build & Scan
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+  security-events: write # Cấp quyền để ghi báo cáo lỗ hổng vào tab Security của GitHub
+
+jobs:
+  build-and-scan:
+    name: Build & Trivy Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. Build Docker Image (Nhưng chưa Push vội)
+      # Chúng ta build để lấy image ID cho Trivy quét
+      - name: Build an Image from Dockerfile
+        run: |
+          docker build -t my-secure-app:${{ github.sha }} .
+
+      # 2. Quét bảo mật bằng Trivy (Công cụ số 1 cho Container)
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'my-secure-app:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH' # Chỉ báo động lỗi Nghiêm trọng và Cao
+          ignore-unfixed: true      # Bỏ qua các lỗi chưa có bản vá (đỡ noise)
+
+      # 3. Upload kết quả lên GitHub Security Tab
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always() # Luôn upload dù có tìm thấy lỗi hay không
+        with:
+          sarif_file: 'trivy-results.sarif'
