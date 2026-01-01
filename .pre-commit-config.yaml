@@ -1,0 +1,10 @@
+# .pre-commit-config.yaml
+repos:
+  - repo: local
+    hooks:
+      - id: custom-security-scan
+        name: Custom Security Scanner
+        entry: python security_scan.py
+        language: system
+        types: [text]
+        pass_filenames: true
