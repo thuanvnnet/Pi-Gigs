@@ -39,9 +39,16 @@ id_rsa
 secrets.json
 config/database.yml
 
+# Prisma
+*.db
+*.db-journal
+/prisma/
+*prisma.ts
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/lib/generated/prisma
