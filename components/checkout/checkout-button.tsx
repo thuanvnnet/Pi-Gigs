@@ -31,24 +31,27 @@ export function CheckoutButton({ gigId, price }: CheckoutButtonProps) {
     setStatus("Initializing...");
 
     try {
-      // 1. Authenticate (Refresh session)
-      // Quan trọng: Gọi cái này để đảm bảo session Pi không bị timeout
+      // 1. Authenticate
       if (window.Pi) {
-           try {
+          try {
              await window.Pi.authenticate(["username", "payments"], {
-               onIncompletePaymentFound: (p: any) => console.log("Incomplete:", p)
+                // FIX: Thêm ": any" vào (p) để TypeScript không báo lỗi
+                onIncompletePaymentFound: (p: any) => console.log("Incomplete:", p)
              });
-           } catch (e) { console.warn(e); }
+          } catch (e) { console.warn(e); }
       }
 
       // 2. Create Order
       setStatus("Creating Order...");
       const orderRes = await createOrder(gigId, user.id);
       
-      if (!orderRes.success || !orderRes.orderId) {
+      // Kiểm tra kỹ cả amount để TS không báo lỗi 'possibly undefined'
+      if (!orderRes.success || !orderRes.orderId || !orderRes.amount) {
         throw new Error(orderRes.error || "Order creation failed");
       }
       
+      const orderId = orderRes.orderId;
+
       // 3. Prepare Data
       const paymentData = {
         amount: parseFloat(orderRes.amount.toString()),
@@ -56,11 +59,10 @@ export function CheckoutButton({ gigId, price }: CheckoutButtonProps) {
         metadata: { orderId: orderRes.orderId, type: "gig_purchase" },
       };
 
-      // 4. Define Callbacks (Viết tường minh để tránh lỗi minify)
+      // 4. Define Callbacks
       const callbacks = {
         onReadyForServerApproval: (paymentId: string) => {
             setStatus("Verifying...");
-            // Gọi Server Action
             approvePayment(paymentId, orderRes.orderId)
                 .then(res => {
                     if(!res.success) alert("Approve Failed: " + res.error);
@@ -69,7 +71,6 @@ export function CheckoutButton({ gigId, price }: CheckoutButtonProps) {
         },
         onServerCompleted: (paymentId: string, txid: string) => {
             setStatus("Finalizing...");
-            // Gọi Server Action
             completePayment(paymentId, txid, orderRes.orderId)
                 .then(res => {
                     if (res.success) {
