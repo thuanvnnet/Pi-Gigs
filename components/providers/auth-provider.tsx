@@ -3,7 +3,6 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { authenticateUser } from "@/app/actions/auth";
-import Script from "next/script";
 import { useRouter } from "next/navigation";
 
 type User = {
@@ -34,17 +33,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Hàm Login chính
-  const login = async () => {
-    setIsLoading(true);
-    try {
-      if (!window.Pi) throw new Error("Pi SDK not found");
+  // Hàm xử lý thanh toán chưa hoàn tất
+  const onIncompletePaymentFound = (payment: any) => {
+    console.log("Incomplete Payment Found:", payment);
+    // TODO: Gửi về server để hoàn tất nếu cần
+  };
 
-      // 1. Authenticate với scopes ĐẦY ĐỦ
-      const scopes = ["username", "payments"]; 
+  const login = async () => {
+    setLoading(true);
+    try {
+      // @ts-ignore
+      if (!window.Pi) {
+        alert("Pi SDK not found. Please open in Pi Browser.");
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Start Authenticate...");
+      
+      // 1. Authenticate
+      const scopes = ["username", "payments"];
+      // @ts-ignore
       const authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);
 
-      // 2. Gọi Server Action để lấy thông tin từ DB
+      console.log("Auth Pi Success:", authResult.user.username);
+
+      // 2. Server Action
       const result = await authenticateUser({
         accessToken: authResult.accessToken,
         user: authResult.user,
@@ -53,13 +67,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (result.success && result.user) {
         setUser(result.user);
         localStorage.setItem("pi_user", JSON.stringify(result.user));
+        alert(`Welcome back, ${result.user.username}!`);
         router.refresh();
       } else {
-        throw new Error(result.error);
+        throw new Error(result.error || "Server validation failed");
       }
     } catch (error: any) {
       console.error("Login failed:", error);
-      alert("Login failed: " + error.message);
+      alert("Login Error: " + error.message);
     } finally {
       setIsLoading(false);
     }
@@ -68,22 +83,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem("pi_user");
-    window.location.href = "/"; 
+    router.push("/");
+    router.refresh();
   };
 
-  const onIncompletePaymentFound = (payment: any) => {
-    console.log("Incomplete Payment Found:", payment);
-    // Xử lý payment treo nếu cần (sẽ làm sau)
-  };
-
-  // Tự động load user từ LocalStorage
+  // Load user từ LocalStorage
   useEffect(() => {
     const stored = localStorage.getItem("pi_user");
     if (stored) {
       try {
-        const parsedUser = JSON.parse(stored);
-        setUser(parsedUser);
-      } catch (e) {
+        setUser(JSON.parse(stored));
+      } catch {
         localStorage.removeItem("pi_user");
       }
     }
@@ -92,16 +102,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout }}>
-      <Script 
-        src="https://sdk.minepi.com/pi-sdk.js" 
-        strategy="afterInteractive"
-        onLoad={() => {
-          if (window.Pi) {
-            // Init SDK
-            window.Pi.init({ version: "2.0", sandbox: process.env.NEXT_PUBLIC_PI_SANDBOX === "true" });
-          }
-        }}
-      />
       {children}
     </AuthContext.Provider>
   );
