@@ -1,8 +1,8 @@
-// components/providers/auth-provider.tsx
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { authenticateUser } from "@/app/actions/auth";
+// FIX: Chỉ import authenticateUser, bỏ getMe vì ta dùng LocalStorage
+import { authenticateUser } from "@/app/actions/auth"; 
 import { useRouter } from "next/navigation";
 
 type User = {
@@ -30,8 +30,7 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  // Khai báo state là isLoading và hàm set là setIsLoading
-  const [isLoading, setIsLoading] = useState(true); 
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   const onIncompletePaymentFound = (payment: any) => {
@@ -39,13 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async () => {
-    // SỬA LỖI Ở ĐÂY: Dùng setIsLoading thay vì setLoading
-    setIsLoading(true); 
+    setIsLoading(true);
     try {
       // @ts-ignore
       if (!window.Pi) {
         alert("Pi SDK not found. Please open in Pi Browser.");
-        setIsLoading(false); // Sửa cả ở đây
+        setIsLoading(false);
         return;
       }
 
@@ -64,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (result.success && result.user) {
         setUser(result.user);
+        // Lưu user vào LocalStorage để lần sau vào không cần load lại từ server (getMe)
         localStorage.setItem("pi_user", JSON.stringify(result.user));
         alert(`Welcome back, ${result.user.username}!`);
         router.refresh();
@@ -74,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Login failed:", error);
       alert("Login Error: " + error.message);
     } finally {
-      setIsLoading(false); // Sửa cả ở đây
+      setIsLoading(false);
     }
   };
 
@@ -85,15 +84,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
+  // Tự động load User từ LocalStorage khi F5 trang
   useEffect(() => {
     const stored = localStorage.getItem("pi_user");
     if (stored) {
       try {
-        setUser(JSON.parse(stored));
-      } catch {
+        const parsedUser = JSON.parse(stored);
+        if (parsedUser && parsedUser.id) {
+            setUser(parsedUser);
+        }
+      } catch (e) {
         localStorage.removeItem("pi_user");
       }
     }
+    // Tắt loading ngay lập tức sau khi check storage
     setIsLoading(false);
   }, []);
 

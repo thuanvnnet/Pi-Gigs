@@ -1,53 +1,37 @@
-import Script from "next/script";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
-// ... Import các component khác (Header, AuthProvider...) 
+
+// 1. Import các thành phần (Chỉ import 1 lần)
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
+import { PiScripts } from "@/components/pi-scripts"; // Component chứa Script tách riêng
 
-// --- SCRIPT KHỞI TẠO MỚI (CỰC NHANH) ---
-// Dùng setInterval để "săn" biến window.Pi mỗi 50ms.
-// Hễ thấy là Init ngay lập tức.
-const PI_SDK_INIT = `
-  (function() {
-    var checkPi = setInterval(function() {
-      if (window.Pi) {
-        clearInterval(checkPi);
-        try {
-          window.Pi.init({ 
-            version: "2.0", 
-            sandbox: ${process.env.NEXT_PUBLIC_PI_SANDBOX === 'true'} 
-          });
-          console.log("✅ Pi SDK Initialized Successfully | Sandbox: ${process.env.NEXT_PUBLIC_PI_SANDBOX}");
-        } catch (err) {
-          console.error("Pi Init Failed:", err);
-        }
-      }
-    }, 50); // Kiểm tra mỗi 50ms
-  })();
-`;
+const inter = Inter({ subsets: ["latin"] });
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: "5.pi Gigs - Freelance Marketplace",
+  description: "Hire freelancers with Pi Network",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="en">
-      <body>
+      <body className={inter.className}>
+        {/* Bọc AuthProvider ở ngoài cùng để quản lý state User */}
         <AuthProvider>
           <Header />
-          {children}
+          <main className="min-h-screen bg-gray-50">
+            {children}
+          </main>
         </AuthProvider>
 
-        {/* 1. Load SDK */}
-        <Script src="https://sdk.minepi.com/pi-sdk.js" strategy="afterInteractive" />
-        
-        {/* 2. Init SDK bằng Inline Script (Không dùng onLoad để tránh trễ) */}
-        <Script id="pi-init" strategy="afterInteractive">
-            {PI_SDK_INIT}
-        </Script>
-        
-        {/* 3. Debug Eruda (Giữ lại để soi lỗi trên điện thoại) */}
-        <Script src="//cdn.jsdelivr.net/npm/eruda" onLoad={() => { 
-            // @ts-ignore
-            eruda.init(); 
-        }} />
+        {/* Nhúng Scripts (SDK + Eruda) - Đã tách ra Client Component để tránh lỗi Build */}
+        <PiScripts />
       </body>
     </html>
   );
