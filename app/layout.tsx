@@ -1,65 +1,29 @@
-// app/layout.tsx
 import Script from "next/script";
 import "./globals.css";
-// ... các import khác (AuthProvider, Header...)
+// ... Import các component khác (Header, AuthProvider...) 
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
 
-// --- SCRIPT KHỞI TẠO THANH TOÁN (PHIÊN BẢN BRACKET NOTATION) ---
-const PI_PAYMENT_SCRIPT = `
-  window.initPiPayment = async function(paymentData, handlers) {
-    console.log("🟢 Starting Pi Payment (Bracket Notation Mode)...");
-
-    if (!window.Pi) {
-      alert("Pi SDK not found");
-      return;
-    }
-
-    // 1. Authenticate (để refresh session)
-    try {
-        await window.Pi.authenticate(["username", "payments"], {
-            onIncompletePaymentFound: function(payment) { console.log("Incomplete:", payment); }
-        });
-    } catch(err) {
-        console.warn("Auth check warning:", err);
-    }
-
-    // 2. KHAI BÁO CALLBACKS - DÙNG NGOẶC VUÔNG ĐỂ CHẶN MINIFY
-    // Turbopack không thể đổi tên chuỗi ký tự trong dấu ngoặc vuông.
-    
-    var callbacks = {};
-
-    callbacks['onReadyForServerApproval'] = function(paymentId) {
-        console.log("✅ Approval Callback", paymentId);
-        handlers.onStatusChange("Verifying...");
-        handlers.approve(paymentId);
-    };
-
-    callbacks['onServerCompleted'] = function(paymentId, txid) {
-        console.log("✅ Completed Callback", paymentId, txid);
-        handlers.onStatusChange("Finalizing...");
-        handlers.complete(paymentId, txid);
-    };
-
-    callbacks['onCancel'] = function(paymentId) {
-        console.log("⚠️ Cancel Callback", paymentId);
-        handlers.onCancel(paymentId);
-    };
-
-    callbacks['onError'] = function(error, payment) {
-        console.error("❌ Error Callback", error);
-        handlers.onError(error);
-    };
-
-    // 3. Gọi SDK
-    try {
-      console.log("🚀 Sending to SDK with Keys:", Object.keys(callbacks));
-      await window.Pi.createPayment(paymentData, callbacks);
-    } catch (err) {
-      console.error("Payment Launch Error:", err);
-      handlers.onError(err);
-    }
-  };
+// --- SCRIPT KHỞI TẠO MỚI (CỰC NHANH) ---
+// Dùng setInterval để "săn" biến window.Pi mỗi 50ms.
+// Hễ thấy là Init ngay lập tức.
+const PI_SDK_INIT = `
+  (function() {
+    var checkPi = setInterval(function() {
+      if (window.Pi) {
+        clearInterval(checkPi);
+        try {
+          window.Pi.init({ 
+            version: "2.0", 
+            sandbox: ${process.env.NEXT_PUBLIC_PI_SANDBOX === 'true'} 
+          });
+          console.log("✅ Pi SDK Initialized Successfully | Sandbox: ${process.env.NEXT_PUBLIC_PI_SANDBOX}");
+        } catch (err) {
+          console.error("Pi Init Failed:", err);
+        }
+      }
+    }, 50); // Kiểm tra mỗi 50ms
+  })();
 `;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -69,9 +33,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <Header />
           {children}
-          {/* Script SDK of Pi */}
-          <Script src="https://sdk.minepi.com/pi-sdk.js" strategy="afterInteractive" />
         </AuthProvider>
+
+        {/* 1. Load SDK */}
+        <Script src="https://sdk.minepi.com/pi-sdk.js" strategy="afterInteractive" />
+        
+        {/* 2. Init SDK bằng Inline Script (Không dùng onLoad để tránh trễ) */}
+        <Script id="pi-init" strategy="afterInteractive">
+            {PI_SDK_INIT}
+        </Script>
+        
+        {/* 3. Debug Eruda (Giữ lại để soi lỗi trên điện thoại) */}
+        <Script src="//cdn.jsdelivr.net/npm/eruda" onLoad={() => { 
+            // @ts-ignore
+            eruda.init(); 
+        }} />
       </body>
     </html>
   );
