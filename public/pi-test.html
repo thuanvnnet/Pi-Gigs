@@ -31,7 +31,7 @@
                 Pi.init({ version: "2.0", sandbox: true });
                 log("Init OK. Đang gọi Auth...");
                 
-                Pi.authenticate(["username", "payments"], {
+                Pi.authenticate(["username"], {
                     onIncompletePaymentFound: function(p) { log("Payment Found: " + p); }
                 }).then(function(auth) {
                     log("✅ SUCCESS! Hello " + auth.user.username);
