@@ -30,35 +30,33 @@ const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Khai báo state là isLoading và hàm set là setIsLoading
+  const [isLoading, setIsLoading] = useState(true); 
   const router = useRouter();
 
-  // Hàm xử lý thanh toán chưa hoàn tất
   const onIncompletePaymentFound = (payment: any) => {
     console.log("Incomplete Payment Found:", payment);
-    // TODO: Gửi về server để hoàn tất nếu cần
   };
 
   const login = async () => {
-    setLoading(true);
+    // SỬA LỖI Ở ĐÂY: Dùng setIsLoading thay vì setLoading
+    setIsLoading(true); 
     try {
       // @ts-ignore
       if (!window.Pi) {
         alert("Pi SDK not found. Please open in Pi Browser.");
-        setIsLoading(false);
+        setIsLoading(false); // Sửa cả ở đây
         return;
       }
 
       console.log("Start Authenticate...");
       
-      // 1. Authenticate
       const scopes = ["username", "payments"];
       // @ts-ignore
       const authResult = await window.Pi.authenticate(scopes, onIncompletePaymentFound);
 
       console.log("Auth Pi Success:", authResult.user.username);
 
-      // 2. Server Action
       const result = await authenticateUser({
         accessToken: authResult.accessToken,
         user: authResult.user,
@@ -76,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error("Login failed:", error);
       alert("Login Error: " + error.message);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Sửa cả ở đây
     }
   };
 
@@ -87,7 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  // Load user từ LocalStorage
   useEffect(() => {
     const stored = localStorage.getItem("pi_user");
     if (stored) {
