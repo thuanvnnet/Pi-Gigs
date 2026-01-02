@@ -1,39 +1,76 @@
 // app/layout.tsx
-import type { Metadata } from "next";
-import { Inter as FontSans } from "next/font/google";
-import "./globals.css";
-import { cn } from "@/lib/utils";
 import Script from "next/script";
+import "./globals.css";
+// ... các import khác (AuthProvider, Header...)
 import { AuthProvider } from "@/components/providers/auth-provider";
+import { Header } from "@/components/layout/header";
 
-const fontSans = FontSans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
+// --- SCRIPT KHỞI TẠO THANH TOÁN (PHIÊN BẢN BRACKET NOTATION) ---
+const PI_PAYMENT_SCRIPT = `
+  window.initPiPayment = async function(paymentData, handlers) {
+    console.log("🟢 Starting Pi Payment (Bracket Notation Mode)...");
 
-export const metadata: Metadata = {
-  title: "Pi-Gigs | Freelance Services for Pi Network",
-  description: "The #1 Gig Marketplace on Pi Network",
-};
+    if (!window.Pi) {
+      alert("Pi SDK not found");
+      return;
+    }
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+    // 1. Authenticate (để refresh session)
+    try {
+        await window.Pi.authenticate(["username", "payments"], {
+            onIncompletePaymentFound: function(payment) { console.log("Incomplete:", payment); }
+        });
+    } catch(err) {
+        console.warn("Auth check warning:", err);
+    }
+
+    // 2. KHAI BÁO CALLBACKS - DÙNG NGOẶC VUÔNG ĐỂ CHẶN MINIFY
+    // Turbopack không thể đổi tên chuỗi ký tự trong dấu ngoặc vuông.
+    
+    var callbacks = {};
+
+    callbacks['onReadyForServerApproval'] = function(paymentId) {
+        console.log("✅ Approval Callback", paymentId);
+        handlers.onStatusChange("Verifying...");
+        handlers.approve(paymentId);
+    };
+
+    callbacks['onServerCompleted'] = function(paymentId, txid) {
+        console.log("✅ Completed Callback", paymentId, txid);
+        handlers.onStatusChange("Finalizing...");
+        handlers.complete(paymentId, txid);
+    };
+
+    callbacks['onCancel'] = function(paymentId) {
+        console.log("⚠️ Cancel Callback", paymentId);
+        handlers.onCancel(paymentId);
+    };
+
+    callbacks['onError'] = function(error, payment) {
+        console.error("❌ Error Callback", error);
+        handlers.onError(error);
+    };
+
+    // 3. Gọi SDK
+    try {
+      console.log("🚀 Sending to SDK with Keys:", Object.keys(callbacks));
+      await window.Pi.createPayment(paymentData, callbacks);
+    } catch (err) {
+      console.error("Payment Launch Error:", err);
+      handlers.onError(err);
+    }
+  };
+`;
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        {/* KHÔNG ĐỂ Script ở đây để tránh xung đột với Extension/Antivirus */}
-      </head>
-      <body
-        className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable
-        )}
-      >
+    <html lang="en">
+      <body>
         <AuthProvider>
+          <Header />
           {children}
+          {/* Script SDK of Pi */}
+          <Script src="https://sdk.minepi.com/pi-sdk.js" strategy="afterInteractive" />
         </AuthProvider>
       </body>
     </html>

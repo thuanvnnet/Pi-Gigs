@@ -9,7 +9,6 @@ export type AuthResult = {
   error?: string;
 };
 
-// Hàm này sẽ được gọi khi Pi SDK xác thực thành công ở Client
 export async function authenticateUser(piData: {
   accessToken: string;
   user: { uid: string; username: string };
@@ -17,31 +16,36 @@ export async function authenticateUser(piData: {
   try {
     const { user: piUser } = piData;
 
-    // 1. Kiểm tra xem User đã tồn tại chưa
+    // 1. Tìm hoặc Tạo User
     let dbUser = await prisma.user.findUnique({
       where: { piUserId: piUser.uid },
     });
 
-    // 2. Nếu chưa có, tạo mới (Register)
     if (!dbUser) {
       console.log("Creating new user:", piUser.username);
       dbUser = await prisma.user.create({
         data: {
           piUserId: piUser.uid,
           username: piUser.username,
-          // Mặc định role USER, wallet 0
+          walletBalance: 0, // Prisma tự hiểu là Decimal(0)
         },
       });
-    } else {
-      // 3. Nếu có rồi, update thông tin mới nhất (nếu cần)
-      // Ví dụ: Update username nếu họ đổi bên Pi App (tuỳ logic)
     }
 
-    // 4. Trả về user để Client lưu vào State/Context
-    return { success: true, user: dbUser };
+    // 2. [QUAN TRỌNG] Serialize dữ liệu (Decimal -> String)
+    // Để tránh lỗi "Decimal objects are not supported"
+    const serializedUser = {
+      ...dbUser,
+      walletBalance: dbUser.walletBalance.toString(), // Chuyển Decimal thành String
+      sellerRatingAvg: dbUser.sellerRatingAvg.toString(), // Chuyển Decimal thành String
+      createdAt: dbUser.createdAt.toISOString(), // Date -> String (cho an toàn)
+      updatedAt: dbUser.updatedAt.toISOString(), // Date -> String
+    };
+
+    return { success: true, user: serializedUser };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error("Auth Error:", error);
-    return { success: false, error: "Failed to authenticate user" };
+    return { success: false, error: error.message || "Failed to authenticate" };
   }
 }
