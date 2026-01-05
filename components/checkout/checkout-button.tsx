@@ -69,7 +69,7 @@ export function CheckoutButton({ gigId, price }: CheckoutButtonProps) {
                 })
                 .catch(e => alert("Approve Error: " + e.message));
         },
-        onServerCompleted: (paymentId: string, txid: string) => {
+        onReadyForServerCompletion: (paymentId: string, txid: string) => {
             setStatus("Finalizing...");
             completePayment(paymentId, txid, orderRes.orderId)
                 .then(res => {
@@ -111,14 +111,14 @@ export function CheckoutButton({ gigId, price }: CheckoutButtonProps) {
   return (
     <div className="w-full">
       {status && (
-        <p className="text-center text-sm text-[#660099] font-medium mb-2 animate-pulse">
+        <p className="text-center text-sm text-[#31BF75] font-medium mb-2 animate-pulse">
           {status}
         </p>
       )}
       <Button 
         onClick={handlePayment} 
         disabled={loading} 
-        className="w-full bg-[#660099] hover:bg-[#52007a] py-6 text-lg font-bold"
+        className="w-full bg-[#31BF75] hover:bg-[#27995E] py-6 text-lg font-bold"
       >
         {loading ? (
             <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Processing...</>

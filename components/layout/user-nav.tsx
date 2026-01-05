@@ -32,22 +32,39 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10 border border-gray-200">
+        <Button variant="ghost" className="relative h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full">
+          <Avatar className="h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 border border-gray-200">
             <AvatarImage src={user.avatarUrl || ""} alt={user.username} />
-            <AvatarFallback className="bg-[#660099] text-white font-bold">
+            <AvatarFallback className="bg-[#31BF75] text-white font-bold text-xs sm:text-sm">
               {user.username[0]?.toUpperCase()}
             </AvatarFallback>
           </Avatar>
+          {/* Online Status Indicator - No animation */}
+          <span 
+            className="absolute bottom-0 right-0 h-2 w-2 sm:h-2.5 sm:w-2.5 md:h-3 md:w-3 bg-[#31BF75] border-2 border-white rounded-full shadow-sm"
+            aria-label="Online"
+            title="Online"
+          />
         </Button>
       </DropdownMenuTrigger>
       
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{user.username}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium leading-none">{user.username}</p>
+              <span 
+                className="h-2 w-2 bg-[#31BF75] rounded-full"
+                aria-label="Online"
+                title="Online"
+              />
+            </div>
             <p className="text-xs leading-none text-muted-foreground">
-              Balance: <span className="text-[#660099] font-bold">{Number(user.walletBalance).toFixed(2)} Pi</span>
+              Balance: <span className="text-[#31BF75] font-bold">{Number(user.walletBalance).toFixed(2)} Pi</span>
+            </p>
+            <p className="text-xs leading-none text-[#31BF75] font-medium mt-1 flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 bg-[#31BF75] rounded-full" />
+              Online
             </p>
           </div>
         </DropdownMenuLabel>

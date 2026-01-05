@@ -52,8 +52,8 @@ export default async function CheckoutPage({ params }: Props) {
 
                 <div className="bg-white p-6 rounded-lg shadow-sm border">
                     <h3 className="font-bold mb-4">Payment Method</h3>
-                    <div className="flex items-center gap-3 p-4 border rounded-lg bg-slate-50 border-[#660099]/30">
-                        <div className="w-8 h-8 rounded-full bg-[#660099] text-white flex items-center justify-center font-bold">π</div>
+                    <div className="flex items-center gap-3 p-4 border rounded-lg bg-slate-50 border-[#31BF75]/30">
+                        <div className="w-8 h-8 rounded-full bg-[#31BF75] text-white flex items-center justify-center font-bold">π</div>
                         <div>
                             <p className="font-bold text-gray-900">Pi Network Wallet</p>
                             <p className="text-xs text-gray-500">Fast and secure blockchain payment</p>
@@ -79,7 +79,7 @@ export default async function CheckoutPage({ params }: Props) {
                         </div>
                         <div className="border-t pt-4 flex justify-between items-center">
                             <span className="font-bold text-lg">Total</span>
-                            <span className="font-bold text-xl text-[#660099]">{total} Pi</span>
+                            <span className="font-bold text-xl text-[#31BF75]">{total} Pi</span>
                         </div>
 
                         {/* Nút thanh toán Client Component */}

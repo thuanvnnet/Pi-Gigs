@@ -5,6 +5,7 @@ import "./globals.css";
 // 1. Import các thành phần (Chỉ import 1 lần)
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 import { PiScripts } from "@/components/pi-scripts"; // Component chứa Script tách riêng
 
 const inter = Inter({ subsets: ["latin"] });
@@ -24,10 +25,13 @@ export default function RootLayout({
       <body className={inter.className}>
         {/* Bọc AuthProvider ở ngoài cùng để quản lý state User */}
         <AuthProvider>
+          <div className="flex flex-col min-h-screen">
           <Header />
-          <main className="min-h-screen bg-gray-50">
+            <main className="flex-1 bg-white">
             {children}
           </main>
+            <Footer />
+          </div>
         </AuthProvider>
 
         {/* Nhúng Scripts (SDK + Eruda) - Đã tách ra Client Component để tránh lỗi Build */}

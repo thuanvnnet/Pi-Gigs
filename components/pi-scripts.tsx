@@ -34,18 +34,6 @@ export function PiScripts() {
       <Script id="pi-init" strategy="afterInteractive">
         {PI_SDK_INIT}
       </Script>
-
-      {/* 3. Debug Eruda (Đây là chỗ gây lỗi nếu để ở layout.tsx vì có onLoad) */}
-      <Script 
-        src="//cdn.jsdelivr.net/npm/eruda" 
-        onLoad={() => {
-          // @ts-ignore
-          if (typeof window !== 'undefined' && window.eruda) {
-             // @ts-ignore
-             window.eruda.init();
-          }
-        }} 
-      />
     </>
   );
 }

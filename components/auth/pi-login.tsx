@@ -65,7 +65,7 @@ export function PiLogin() {
     <Button 
       onClick={handleLogin} 
       size="lg" 
-      className="bg-[#660099] hover:bg-[#4d0073] text-white font-bold w-full sm:w-auto"
+      className="bg-[#31BF75] hover:bg-[#258F58] text-white font-bold w-full sm:w-auto"
     >
       Login with Pi & Create Gig
     </Button>

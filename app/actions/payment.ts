@@ -2,6 +2,7 @@
 "use server";
 
 import axios from "axios";
+import prisma from "@/lib/prisma";
 
 const PI_API_URL = "https://api.minepi.com/v2";
 
@@ -19,6 +20,34 @@ export async function approvePayment(paymentId: string, orderId: string) {
         },
       }
     );
+
+    // Update database: Create or update PiPayment with AUTHORIZED status
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { amountPi: true },
+    });
+
+    if (order) {
+      await prisma.piPayment.upsert({
+        where: { orderId: orderId },
+        update: {
+          piPaymentId: paymentId,
+          status: "AUTHORIZED",
+        },
+        create: {
+          orderId: orderId,
+          piPaymentId: paymentId,
+          amount: order.amountPi,
+          status: "AUTHORIZED",
+        },
+      });
+
+      // Update order status to AWAITING_PAYMENT (optional, or keep CREATED)
+      await prisma.order.update({
+        where: { id: orderId },
+        data: { status: "AWAITING_PAYMENT" },
+      });
+    }
 
     return { success: true, data: response.data };
   } catch (error: any) {
@@ -42,8 +71,41 @@ export async function completePayment(paymentId: string, txid: string, orderId: 
       }
     );
 
-    // Update your database here (mark order as PAID)
-    // await prisma.order.update(...)
+    // Update database: Mark order as PAID and update PiPayment
+    await prisma.$transaction(async (prismaTx) => {
+      // Get order amount first
+      const order = await prismaTx.order.findUnique({
+        where: { id: orderId },
+        select: { amountPi: true },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      // Update PiPayment with txid and COMPLETED status
+      await prismaTx.piPayment.upsert({
+        where: { orderId: orderId },
+        update: {
+          piPaymentId: paymentId,
+          txid: txid,
+          status: "COMPLETED",
+        },
+        create: {
+          orderId: orderId,
+          piPaymentId: paymentId,
+          txid: txid,
+          amount: order.amountPi,
+          status: "COMPLETED",
+        },
+      });
+
+      // Update order status to PAID
+      await prismaTx.order.update({
+        where: { id: orderId },
+        data: { status: "PAID" },
+      });
+    });
 
     return { success: true, data: response.data };
   } catch (error: any) {
