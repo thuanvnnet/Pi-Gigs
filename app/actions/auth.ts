@@ -40,6 +40,7 @@ export async function authenticateUser(piData: {
       sellerRatingAvg: dbUser.sellerRatingAvg.toString(), // Chuyển Decimal thành String
       createdAt: dbUser.createdAt.toISOString(), // Date -> String (cho an toàn)
       updatedAt: dbUser.updatedAt.toISOString(), // Date -> String
+      // Các trường mới đã được include tự động từ dbUser
     };
 
     return { success: true, user: serializedUser };

@@ -111,7 +111,7 @@ export default async function Home() {
               {["Logo Design", "Writing", "Translation", "Pi App", "Video Editing", "Marketing"].map((item) => (
                 <Link
                   key={item}
-                  href={`/?search=${encodeURIComponent(item)}`}
+                  href={`/search?q=${encodeURIComponent(item)}`}
                   className="px-4 py-2 text-base bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-full border border-gray-200 transition-colors"
                   aria-label={`Search for ${item}`}
                 >

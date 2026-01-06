@@ -80,7 +80,7 @@ export function UserNav() {
             <CreditCard className="mr-2 h-4 w-4" />
             <span>My Orders</span>
           </DropdownMenuItem>
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push("/dashboard/profile")}>
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
           </DropdownMenuItem>

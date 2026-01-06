@@ -3,6 +3,7 @@
 
 import axios from "axios";
 import prisma from "@/lib/prisma";
+import { createNotification } from "@/app/actions/notification";
 
 const PI_API_URL = "https://api.minepi.com/v2";
 
@@ -72,11 +73,29 @@ export async function completePayment(paymentId: string, txid: string, orderId: 
     );
 
     // Update database: Mark order as PAID and update PiPayment
-    await prisma.$transaction(async (prismaTx) => {
-      // Get order amount first
+    const orderData = await prisma.$transaction(async (prismaTx) => {
+      // Get order with buyer and seller info
       const order = await prismaTx.order.findUnique({
         where: { id: orderId },
-        select: { amountPi: true },
+        include: {
+          gig: {
+            select: {
+              title: true,
+            },
+          },
+          buyer: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
+          seller: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
+        },
       });
 
       if (!order) {
@@ -105,7 +124,34 @@ export async function completePayment(paymentId: string, txid: string, orderId: 
         where: { id: orderId },
         data: { status: "PAID" },
       });
+
+      return order;
     });
+
+    // Notify both buyer and seller about payment completion
+    const amount = Number(orderData.amountPi).toFixed(2);
+    
+    await createNotification(
+      orderData.buyerId,
+      "PAYMENT",
+      "Payment Completed",
+      `Payment of ${amount} π has been completed for "${orderData.gig.title}"`,
+      orderData.sellerId,
+      orderId,
+      "ORDER",
+      { gigId: orderData.gig.id, gigTitle: orderData.gig.title, amount }
+    );
+
+    await createNotification(
+      orderData.sellerId,
+      "PAYMENT",
+      "Payment Received",
+      `You received ${amount} π payment for "${orderData.gig.title}"`,
+      orderData.buyerId,
+      orderId,
+      "ORDER",
+      { gigId: orderData.gig.id, gigTitle: orderData.gig.title, amount }
+    );
 
     return { success: true, data: response.data };
   } catch (error: any) {

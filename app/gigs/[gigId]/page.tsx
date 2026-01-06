@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ReviewItem } from "@/components/reviews/review-item";
+import { ContactSellerButton } from "@/components/messages/contact-seller-button";
 
 // Định nghĩa Props cho Next.js 16 (params là Promise)
 type Props = {
@@ -446,14 +447,11 @@ export default async function GigDetailPage({ params }: Props) {
                   </Link>
                   
                   {/* Secondary CTA */}
-                  <Button 
-                    variant="outline" 
-                    size="lg"
+                  <ContactSellerButton
+                    sellerId={gig.seller.id}
+                    sellerUsername={gig.seller.username}
                     className="w-full border-2 text-gray-700 hover:bg-gray-50 font-medium"
-                  >
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    Contact Seller
-                  </Button>
+                  />
 
                   {/* Additional Info */}
                   <div className="mt-6 pt-6 border-t border-gray-200">

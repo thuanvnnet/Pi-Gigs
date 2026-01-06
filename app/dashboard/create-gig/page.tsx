@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea"; // Cần tạo file này nếu chưa có (dùng npx shadcn@latest add textarea)
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"; // Cần npx shadcn@latest add form
 import { ImageUpload } from "@/components/gigs/image-upload";
+import { CategorySelect } from "@/components/categories/category-select";
 import { Loader2 } from "lucide-react";
 
 export default function CreateGigPage() {
@@ -96,15 +97,19 @@ export default function CreateGigPage() {
             )}
           />
 
-          {/* Category (Tạm thời là Input text, sau này thay bằng Select) */}
+          {/* Category */}
           <FormField
             control={form.control}
             name="categoryId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Category ID</FormLabel>
+                <FormLabel>Category</FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter category ID (e.g. 1)" {...field} />
+                  <CategorySelect
+                    value={field.value}
+                    onChange={field.onChange}
+                    error={form.formState.errors.categoryId?.message}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

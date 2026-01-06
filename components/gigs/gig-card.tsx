@@ -17,7 +17,7 @@ interface GigCardProps {
     ratingCount: number;
     deliveryDays?: number;
     completedSalesCount?: number; // Optional: số lượng đã bán thành công
-    seller: {
+    seller?: {
       username: string;
       avatarUrl: string | null;
       sellerRatingAvg: any;
@@ -32,7 +32,7 @@ export function GigCard({ gig }: GigCardProps) {
   // Xử lý hiển thị giá và rating an toàn
   const price = gig.basePricePi ? Number(gig.basePricePi) : 0;
   const gigRating = gig.ratingAvg ? Number(gig.ratingAvg).toFixed(1) : null;
-  const sellerRating = gig.seller.sellerRatingAvg 
+  const sellerRating = gig.seller?.sellerRatingAvg 
     ? Number(gig.seller.sellerRatingAvg).toFixed(1) 
     : null;
   const hasRating = gigRating !== null && gig.ratingCount > 0;
@@ -84,18 +84,25 @@ export function GigCard({ gig }: GigCardProps) {
         {/* 2. Content Section */}
         <CardHeader className="p-4 pb-3 flex-1 flex flex-col gap-3">
           {/* Seller Info with Rating - MOVED TO TOP */}
-          <div className="flex items-center gap-2.5">
-            <Avatar className="w-8 h-8 border-2 border-gray-100 group-hover:border-[#31BF75]/30 transition-colors flex-shrink-0">
-              <AvatarImage src={gig.seller.avatarUrl || ""} alt={gig.seller.username} />
-              <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-[#31BF75] to-[#27995E] text-white">
-                {gig.seller.username[0].toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold text-gray-900 truncate leading-relaxed">
-                  {gig.seller.username}
-                </span>
+          {gig.seller && (
+            <div className="flex items-center gap-2.5">
+              <div className="relative flex-shrink-0">
+                <Avatar className="w-8 h-8 border-2 border-gray-100 group-hover:border-[#31BF75]/30 transition-colors">
+                  <AvatarImage src={gig.seller.avatarUrl || ""} alt={gig.seller.username} />
+                  <AvatarFallback className="text-xs font-semibold bg-gradient-to-br from-[#31BF75] to-[#27995E] text-white">
+                    {gig.seller.username[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Online Status Indicator */}
+                <div className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-white rounded-full flex items-center justify-center border border-gray-200">
+                  <div className="h-2 w-2 bg-[#31BF75] rounded-full"></div>
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-gray-900 truncate leading-relaxed">
+                    {gig.seller.username}
+                  </span>
                 {sellerRating && (
                   <div className="flex items-center gap-0.5 text-xs text-gray-600">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -108,9 +115,10 @@ export function GigCard({ gig }: GigCardProps) {
                     <span>{completedSales.toLocaleString()} sales</span>
                   </div>
                 )}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Title */}
           <h3 

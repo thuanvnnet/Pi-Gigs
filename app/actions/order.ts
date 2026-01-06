@@ -2,6 +2,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { createNotification } from "@/app/actions/notification";
 
 // Validate UUID bằng regex
 const isValidUUID = (id: string) => {
@@ -34,7 +35,26 @@ export async function createOrder(gigId: string, buyerId: string) {
         status: "CREATED", 
         requirements: "Waiting for requirements...",
       },
+      include: {
+        buyer: {
+          select: {
+            username: true,
+          },
+        },
+      },
     });
+
+    // Notify seller about new order
+    await createNotification(
+      gig.sellerId,
+      "ORDER_CREATED",
+      "New Order Received",
+      `${order.buyer.username} placed an order for "${gig.title}"`,
+      buyerId,
+      order.id,
+      "ORDER",
+      { gigId: gig.id, gigTitle: gig.title }
+    );
 
     return { success: true, orderId: order.id, amount: Number(gig.basePricePi) };
   } catch (error: any) {
@@ -216,11 +236,27 @@ export async function updateOrderStatus(
         id: orderId,
         OR: [{ buyerId: userId }, { sellerId: userId }],
       },
-      select: {
+      include: {
         id: true,
         buyerId: true,
         sellerId: true,
         status: true,
+        gig: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+        buyer: {
+          select: {
+            username: true,
+          },
+        },
+        seller: {
+          select: {
+            username: true,
+          },
+        },
       },
     });
 
@@ -270,6 +306,58 @@ export async function updateOrderStatus(
       where: { id: orderId },
       data: { status: newStatus },
     });
+
+    // Create notifications based on status
+    const statusMessages: Record<string, { title: string; content: string; notifyUser: "buyer" | "seller" | "both" }> = {
+      IN_PROGRESS: {
+        title: "Order In Progress",
+        content: `Seller has started working on your order for "${order.gig.title}"`,
+        notifyUser: "buyer",
+      },
+      DELIVERED: {
+        title: "Order Delivered",
+        content: `Your order for "${order.gig.title}" has been delivered. Please review and mark as completed.`,
+        notifyUser: "buyer",
+      },
+      COMPLETED: {
+        title: "Order Completed",
+        content: `Order for "${order.gig.title}" has been completed successfully!`,
+        notifyUser: "both",
+      },
+      CANCELLED: {
+        title: "Order Cancelled",
+        content: `Order for "${order.gig.title}" has been cancelled.`,
+        notifyUser: "both",
+      },
+    };
+
+    const statusInfo = statusMessages[newStatus];
+    if (statusInfo) {
+      if (statusInfo.notifyUser === "buyer" || statusInfo.notifyUser === "both") {
+        await createNotification(
+          order.buyerId,
+          "ORDER_UPDATED",
+          statusInfo.title,
+          statusInfo.content,
+          userId,
+          orderId,
+          "ORDER",
+          { gigId: order.gig.id, gigTitle: order.gig.title, status: newStatus }
+        );
+      }
+      if (statusInfo.notifyUser === "seller" || statusInfo.notifyUser === "both") {
+        await createNotification(
+          order.sellerId,
+          "ORDER_UPDATED",
+          statusInfo.title,
+          statusInfo.content,
+          userId,
+          orderId,
+          "ORDER",
+          { gigId: order.gig.id, gigTitle: order.gig.title, status: newStatus }
+        );
+      }
+    }
 
     return { success: true };
   } catch (error: any) {

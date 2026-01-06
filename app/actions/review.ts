@@ -2,6 +2,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { createNotification } from "@/app/actions/notification";
 
 // Validate UUID bằng regex
 const isValidUUID = (id: string) => {
@@ -37,7 +38,13 @@ export async function createReview(
         gig: {
           select: {
             id: true,
+            title: true,
             sellerId: true,
+          },
+        },
+        buyer: {
+          select: {
+            username: true,
           },
         },
         review: true,
@@ -103,6 +110,18 @@ export async function createReview(
 
       return review;
     });
+
+    // Notify seller about new review
+    await createNotification(
+      order.gig.sellerId,
+      "REVIEW",
+      "New Review Received",
+      `${order.buyer.username} left a ${rating}-star review for "${order.gig.title}"`,
+      buyerId,
+      result.id,
+      "REVIEW",
+      { gigId: order.gig.id, gigTitle: order.gig.title, rating, orderId }
+    );
 
     return { success: true, review: result };
   } catch (error: any) {
