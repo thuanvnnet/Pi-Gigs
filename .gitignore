@@ -17,6 +17,12 @@
 /.next/
 /out/
 
+# Disable validation
+public/validation-key.txt
+
+# Block file log
+*.log
+
 # production
 /build
 
