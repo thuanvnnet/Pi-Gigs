@@ -2,9 +2,19 @@
 "use client"; // <--- QUAN TRỌNG NHẤT: Dòng này biến nó thành Client Component
 
 import Script from "next/script";
-import { useEffect } from "react";
+
+// Get sandbox mode from environment variable
+// For client components, NEXT_PUBLIC_* vars are automatically exposed by Next.js
+const getSandboxMode = (): boolean => {
+  const sandboxEnv = process.env.NEXT_PUBLIC_PI_SANDBOX;
+  return sandboxEnv === 'true';
+};
+
+const sandboxMode = getSandboxMode();
+const sandboxEnvValue = process.env.NEXT_PUBLIC_PI_SANDBOX || 'false';
 
 // Script Init Pi SDK (Polling)
+// Using template literal with actual boolean value for better type safety
 const PI_SDK_INIT = `
   (function() {
     var checkPi = setInterval(function() {
@@ -13,9 +23,9 @@ const PI_SDK_INIT = `
         try {
           window.Pi.init({ 
             version: "2.0", 
-            sandbox: ${process.env.NEXT_PUBLIC_PI_SANDBOX === 'true'} 
+            sandbox: ${sandboxMode}
           });
-          console.log("✅ Pi SDK Initialized | Sandbox: ${process.env.NEXT_PUBLIC_PI_SANDBOX}");
+          console.log("✅ Pi SDK Initialized | Sandbox: ${sandboxEnvValue}");
         } catch (err) {
           console.error("Pi Init Failed:", err);
         }

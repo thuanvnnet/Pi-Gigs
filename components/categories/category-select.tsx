@@ -31,10 +31,15 @@ export function CategorySelect({ value, onChange, error }: CategorySelectProps) 
   useEffect(() => {
     async function loadCategories() {
       try {
-        const data = await getAllCategoriesFlat();
-        setCategories(data);
+        const result = await getAllCategoriesFlat();
+        if (result.success) {
+          setCategories(result.categories || []);
+        } else {
+          setCategories([]);
+        }
       } catch (error) {
         console.error("Failed to load categories:", error);
+        setCategories([]);
       } finally {
         setLoading(false);
       }

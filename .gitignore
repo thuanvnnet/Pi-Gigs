@@ -39,6 +39,7 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 .env.*
+!.env.example
 *.pem
 *.key
 id_rsa
@@ -46,10 +47,19 @@ secrets.json
 config/database.yml
 
 # Prisma
+# Ignore database files
 *.db
 *.db-journal
-/prisma/
+
+# Ignore generated Prisma Client files
+node_modules/.prisma/
+/lib/generated/prisma
 *prisma.ts
+
+# ✅ DO NOT ignore:
+# prisma/schema.prisma  <- Should be committed (source of truth)
+# prisma/migrations/    <- Should be committed (migration history)
+# prisma/seed.ts        <- Should be committed (if exists)
 # vercel
 .vercel
 

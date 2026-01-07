@@ -2,6 +2,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker deployment (optional)
+  // Uncomment if deploying with Docker:
+  // output: 'standalone',
+  
   images: {
     remotePatterns: [
       {
@@ -13,6 +17,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  
+  // Experimental features for better Server Actions support
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '2mb',
+    },
+  },
+  
   // Các config khác nếu có...
 };
 

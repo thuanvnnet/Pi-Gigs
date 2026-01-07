@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String         @id @default(uuid()) @db.Uuid
+  piUserId          String         @unique @map("pi_user_id") @db.VarChar(100)
+  username          String         @unique @db.VarChar(50)
+  email             String?        @db.VarChar(255)
+  avatarUrl         String?        @map("avatar_url")
+  bio               String?
+  roles             UserRole       @default(USER)
+  walletBalance     Decimal        @default(0) @map("wallet_balance") @db.Decimal(20, 8)
+  sellerRatingAvg   Decimal        @default(0) @map("seller_rating_avg") @db.Decimal(3, 2)
+  sellerReviewCount Int            @default(0) @map("seller_review_count")
+  isActive          Boolean        @default(true) @map("is_active")
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime       @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  facebookUrl       String?        @map("facebook_url") @db.VarChar(255)
+  languages         String[]       @default([])
+  linkedinUrl       String?        @map("linkedin_url") @db.VarChar(255)
+  location          String?        @db.VarChar(100)
+  phone             String?        @db.VarChar(20)
+  skills            String[]       @default([])
+  timezone          String?        @db.VarChar(50)
+  twitterUrl        String?        @map("twitter_url") @db.VarChar(255)
+  website           String?        @db.VarChar(255)
+  conversations1    Conversation[] @relation("User1Conversations")
+  conversations2    Conversation[] @relation("User2Conversations")
+  gigs              Gig[]
+  sentMessages      Message[]
+  triggeredNotifs   Notification[] @relation("ActorNotifications")
+  notifications     Notification[] @relation("RecipientNotifications")
+  buyingOrders      Order[]        @relation("BuyerOrders")
+  sellingOrders     Order[]        @relation("SellerOrders")
+  buyerReviews      Review[]       @relation("BuyerReviews")
+  sellerReviews     Review[]       @relation("SellerReviews")
+  followers         Follow[]       @relation("Follower")
+  following         Follow[]       @relation("Following")
+
+  @@map("users")
+}
+
+model Category {
+  id        Int        @id @default(autoincrement())
+  parentId  Int?       @map("parent_id")
+  name      String     @db.VarChar(100)
+  slug      String     @unique @db.VarChar(150)
+  iconUrl   String?    @map("icon_url")
+  level     Int        @default(1)
+  isActive  Boolean    @default(true) @map("is_active")
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  parent    Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  Category[] @relation("CategoryHierarchy")
+  gigs      Gig[]
+
+  @@map("categories")
+}
+
+model Gig {
+  id           String    @id @default(uuid()) @db.Uuid
+  sellerId     String    @map("seller_id") @db.Uuid
+  categoryId   Int?      @map("category_id")
+  title        String    @db.VarChar(255)
+  slug         String    @unique @db.VarChar(300)
+  description  String?
+  basePricePi  Decimal   @map("base_price_pi") @db.Decimal(20, 8)
+  deliveryDays Int       @default(3) @map("delivery_days")
+  images       Json      @default("[]")
+  attributes   Json      @default("{}")
+  ratingAvg    Decimal   @default(0) @map("rating_avg") @db.Decimal(3, 2)
+  ratingCount  Int       @default(0) @map("rating_count")
+  status       GigStatus @default(ACTIVE)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  category     Category? @relation(fields: [categoryId], references: [id])
+  seller       User      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  orders       Order[]
+  reviews      Review[]
+
+  @@index([sellerId])
+  @@index([categoryId])
+  @@index([status])
+  @@map("gigs")
+}
+
+model Order {
+  id           String      @id @default(uuid()) @db.Uuid
+  gigId        String      @map("gig_id") @db.Uuid
+  buyerId      String      @map("buyer_id") @db.Uuid
+  sellerId     String      @map("seller_id") @db.Uuid
+  amountPi     Decimal     @map("amount_pi") @db.Decimal(20, 8)
+  requirements String?
+  status       OrderStatus @default(CREATED)
+  createdAt    DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  buyer        User        @relation("BuyerOrders", fields: [buyerId], references: [id])
+  gig          Gig         @relation(fields: [gigId], references: [id])
+  seller       User        @relation("SellerOrders", fields: [sellerId], references: [id])
+  payment      PiPayment?
+  review       Review?
+
+  @@index([buyerId])
+  @@index([sellerId])
+  @@map("orders")
+}
+
+model PiPayment {
+  id          String        @id @default(uuid()) @db.Uuid
+  orderId     String        @unique @map("order_id") @db.Uuid
+  piPaymentId String?       @unique @map("pi_payment_id") @db.VarChar(100)
+  txid        String?       @db.VarChar(255)
+  amount      Decimal       @db.Decimal(20, 8)
+  status      PaymentStatus @default(INITIALIZED)
+  metaData    Json?         @map("meta_data")
+  createdAt   DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  order       Order         @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@map("pi_payments")
+}
+
+model Review {
+  id            String    @id @default(uuid()) @db.Uuid
+  orderId       String    @unique @map("order_id") @db.Uuid
+  gigId         String    @map("gig_id") @db.Uuid
+  buyerId       String    @map("buyer_id") @db.Uuid
+  sellerId      String    @map("seller_id") @db.Uuid
+  rating        Int
+  comment       String?
+  sellerReply   String?   @map("seller_reply")
+  sellerReplyAt DateTime? @map("seller_reply_at") @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  buyer         User      @relation("BuyerReviews", fields: [buyerId], references: [id])
+  gig           Gig       @relation(fields: [gigId], references: [id])
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  seller        User      @relation("SellerReviews", fields: [sellerId], references: [id])
+
+  @@index([gigId])
+  @@index([sellerId])
+  @@map("reviews")
+}
+
+model Conversation {
+  id                 String    @id @default(uuid()) @db.Uuid
+  user1Id            String    @map("user_1_id") @db.Uuid
+  user2Id            String    @map("user_2_id") @db.Uuid
+  lastMessagePreview String?   @map("last_message_preview")
+  lastMessageAt      DateTime? @default(now()) @map("last_message_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  user1              User      @relation("User1Conversations", fields: [user1Id], references: [id])
+  user2              User      @relation("User2Conversations", fields: [user2Id], references: [id])
+  messages           Message[]
+
+  @@unique([user1Id, user2Id])
+  @@index([user1Id])
+  @@index([user2Id])
+  @@index([lastMessageAt(sort: Desc)])
+  @@map("conversations")
+}
+
+model Message {
+  id             BigInt       @id @default(autoincrement())
+  conversationId String       @map("conversation_id") @db.Uuid
+  senderId       String       @map("sender_id") @db.Uuid
+  content        String?
+  attachments    Json         @default("[]")
+  isRead         Boolean      @default(false) @map("is_read")
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, id(sort: Desc)])
+  @@map("messages")
+}
+
+model Notification {
+  id          String   @id @default(uuid()) @db.Uuid
+  recipientId String   @map("recipient_id") @db.Uuid
+  actorId     String?  @map("actor_id") @db.Uuid
+  type        String   @db.VarChar(50)
+  title       String   @db.VarChar(255)
+  content     String?
+  entityId    String?  @map("entity_id") @db.Uuid
+  entityType  String?  @map("entity_type") @db.VarChar(50)
+  metadata    Json     @default("{}")
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  actor       User?    @relation("ActorNotifications", fields: [actorId], references: [id])
+  recipient   User     @relation("RecipientNotifications", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MOD
+}
+
+enum GigStatus {
+  ACTIVE
+  PAUSED
+  BANNED
+  DRAFT
+}
+
+enum OrderStatus {
+  CREATED
+  AWAITING_PAYMENT
+  PAID
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  INITIALIZED
+  AUTHORIZED
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+model Follow {
+  id          String   @id @default(uuid()) @db.Uuid
+  followerId String   @map("follower_id") @db.Uuid
+  followingId String  @map("following_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}

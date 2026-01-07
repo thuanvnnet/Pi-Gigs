@@ -4,8 +4,7 @@
 import axios from "axios";
 import prisma from "@/lib/prisma";
 import { createNotification } from "@/app/actions/notification";
-
-const PI_API_URL = "https://api.minepi.com/v2";
+import { env } from "@/lib/env";
 
 export async function approvePayment(paymentId: string, orderId: string) {
   try {
@@ -13,11 +12,11 @@ export async function approvePayment(paymentId: string, orderId: string) {
     
     // Call Pi API to approve
     const response = await axios.post(
-      `${PI_API_URL}/payments/${paymentId}/approve`,
+      `${env.pi.apiUrl}/payments/${paymentId}/approve`,
       {},
       {
         headers: {
-          Authorization: `Key ${process.env.PI_API_KEY}`,
+          Authorization: `Key ${env.pi.apiKey}`,
         },
       }
     );
@@ -63,11 +62,11 @@ export async function completePayment(paymentId: string, txid: string, orderId: 
 
     // Call Pi API to complete
     const response = await axios.post(
-      `${PI_API_URL}/payments/${paymentId}/complete`,
+      `${env.pi.apiUrl}/payments/${paymentId}/complete`,
       { txid },
       {
         headers: {
-          Authorization: `Key ${process.env.PI_API_KEY}`,
+          Authorization: `Key ${env.pi.apiKey}`,
         },
       }
     );
