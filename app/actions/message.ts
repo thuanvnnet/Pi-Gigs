@@ -76,7 +76,6 @@ export async function sendMessage(
 
     // Notify recipient about new message
     const recipientId = conversation.user1Id === senderId ? conversation.user2Id : conversation.user1Id;
-    const recipient = conversation.user1Id === senderId ? conversation.user2 : conversation.user1;
     
     await createNotification(
       recipientId,
